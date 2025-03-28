@@ -8,6 +8,8 @@ import torch.optim as optim
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def imshow(img):
     img = img / 2 + 0.5     # unnormalize
@@ -26,7 +28,7 @@ if __name__ == '__main__':
 
     mushroom_jpegs = torchvision.datasets.ImageFolder(root=KAGGLE, transform=transforms)
 
-    BATCH_SIZE = 4
+    BATCH_SIZE = 2
     n = len(mushroom_jpegs)  # total number of examples
     n_test = int(0.2 * n)  # take ~20% for test
     test_set = data.Subset(mushroom_jpegs, range(n_test))  # take first 20%
@@ -70,50 +72,54 @@ class CNN(nn.Module):
     
 net = CNN()
 criterion = nn.CrossEntropyLoss()
+print("Setting optimizer...")
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 
-for epoch in range(2):  # loop over the dataset multiple times
+# for epoch in range(2):  # loop over the dataset multiple times
+#     print("Loop begins, epoch: {}".format(epoch))
+#     running_loss = 0.0
+#     print(running_loss)
+#     for i, data in enumerate(train_set_loader, 0):
+#         # get the inputs; data is a list of [inputs, labels]
+#         inputs, labels = data
 
-    running_loss = 0.0
-    for i, data in enumerate(train_set_loader, 0):
-        # get the inputs; data is a list of [inputs, labels]
-        inputs, labels = data
+#         # zero the parameter gradients
+#         optimizer.zero_grad()
+#         # forward + backward + optimize
+#         outputs = net(inputs)
+#         loss = criterion(outputs, labels)
+#         loss.backward()
+#         optimizer.step()
+#         # print statistics
+#         running_loss += loss.item()
+#         if i % 2000 == 1999:    # print every 2000 mini-batches
+#             print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+#             running_loss = 0.0
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
-
-        # forward + backward + optimize
-        outputs = net(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        # print statistics
-        running_loss += loss.item()
-        if i % 2000 == 1999:    # print every 2000 mini-batches
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
-            running_loss = 0.0
-
-print('Finished Training')
+# print('Finished Training')
 
 SAVE_PATH = './test_net_2803.pth'
-torch.save(net.state_dict(), SAVE_PATH)
+# torch.save(net.state_dict(), SAVE_PATH)
 
-# dataiter = iter(test_data_loader)
-# images, labels = next(dataiter)
+dataiter = iter(test_data_loader)
+images, labels = next(dataiter)
 
-# # print images
-# imshow(torchvision.utils.make_grid(images))
-# print('GroundTruth: ', ' '.join(f'{classes[labels[j]]:5s}' for j in range(4)))
-
-
+# print images
+imshow(torchvision.utils.make_grid(images))
+print('GroundTruth: ', ' '.join(f'{classes[labels[j]]:5s}' for j in range(2)))
 
 
 
+net = CNN()
+net.load_state_dict(torch.load(SAVE_PATH, weights_only=True))
 
+outputs = net(images)
 
+_, predicted = torch.max(outputs, 1)
 
+print('Predicted: ', ' '.join(f'{classes[predicted[j]]:5s}'
+                              for j in range(2)))
 
 
 
