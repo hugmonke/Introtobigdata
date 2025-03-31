@@ -23,28 +23,31 @@ def imshow(img):
     plt.show()
 
 def load_model(model, PATH=None):
-    if PATH is None:
-        import glob
-        PATH = os.path.join('Models', '*.pth')
-        list_of_files = glob.glob(PATH)
-        latest_file = max(list_of_files, key=os.path.getctime)
+    
     try:
-        model.load_state_dict(torch.load(latest_file))    
+        if PATH is None:
+            import glob
+            PATH = os.path.join('Models', '*.pth')
+            list_of_files = glob.glob(PATH)
+            latest_file = max(list_of_files, key=os.path.getctime)
+        model.load_state_dict(torch.load(latest_file)) 
+        print("==============================================")
+        print("Existing model found - continuing training!")
+        print("==============================================")
     except:
         print("==============================================")
         print("NO EXISTING MODEL FOUND")
         print("==============================================")
     
-    print("==============================================")
-    print("Existing model found - continuing training!")
-    print("==============================================")
+    
+
 
 def main():
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 
     SAVE_PATH = './Models/model{}.pth'.format(int(time.time()))
     KAGGLE = "Kaggle"
-    EPOCHS = 2
+    EPOCHS = 10
     PRINTLOSS = 25
     BATCH_SIZE = 100
     device = torch.device("cuda:0")
