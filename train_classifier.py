@@ -1,37 +1,18 @@
 import torch
 import torchvision
-from torchvision.transforms import v2
-import torch.utils.data as data
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
+from torchvision.transforms import v2
+from torch.utils.data import Subset, DataLoader
+
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-from PIL import ImageFile
 import time
+import numpy as np
+import matplotlib.pyplot as plt
+from PIL import ImageFile
 
+import cnnetwork as cnn
 
-class CNN(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2) 
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(64 * 56 * 56, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, 9)
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-
-        return x
 
 def imshow(img):
     # Use imshow(torchvision.utils.make_grid(images)) to show an image grid
@@ -58,7 +39,7 @@ def load_model(model, PATH=None):
     print("Existing model found - continuing training!")
     print("==============================================")
 
-if __name__ == '__main__':
+def main():
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 
     SAVE_PATH = './Models/model{}.pth'.format(int(time.time()))
@@ -80,18 +61,18 @@ if __name__ == '__main__':
     
     jpeg_amount = len(mushroom_jpegs)  
     test_jpeg_amount = int(0.2 * jpeg_amount)  
-    test_set = data.Subset(mushroom_jpegs, range(test_jpeg_amount))
-    train_set = data.Subset(mushroom_jpegs, range(test_jpeg_amount, jpeg_amount))
+    test_set = Subset(mushroom_jpegs, range(test_jpeg_amount))
+    train_set = Subset(mushroom_jpegs, range(test_jpeg_amount, jpeg_amount))
 
-    test_set_loader  = data.DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=0) 
-    train_set_loader = data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True,  num_workers=0)
+    test_set_loader  = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=0) 
+    train_set_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True,  num_workers=0)
 
-    classes = next(os.walk(KAGGLE))[1] # List folder names - ergo list mushroom family
+    # classes = next(os.walk(KAGGLE))[1] # List folder names - ergo list mushroom family
 
     dataiter = iter(train_set_loader)
     images, labels = next(dataiter)
 
-    net = CNN().to(device)
+    net = cnn.CNN().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
@@ -116,3 +97,7 @@ if __name__ == '__main__':
 
     print('Finished Training - Saving to {}'.format(SAVE_PATH)) 
     torch.save(net.state_dict(), SAVE_PATH)
+
+
+if __name__ == '__main__':
+    main()
