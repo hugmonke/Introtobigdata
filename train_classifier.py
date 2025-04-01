@@ -30,7 +30,8 @@ def load_model(model, PATH=None):
             PATH = os.path.join('Models', '*.pth')
             list_of_files = glob.glob(PATH)
             latest_file = max(list_of_files, key=os.path.getctime)
-        model.load_state_dict(torch.load(latest_file)) 
+            PATH = latest_file
+        model.load_state_dict(torch.load(PATH)) 
         print("==============================================")
         print("Existing model found - continuing training!")
         print("==============================================")
@@ -46,29 +47,23 @@ def main():
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 
     SAVE_PATH = './Models/model{}.pth'.format(int(time.time()))
+    CHECKPOINT_PATH = './Checkpoints/cpmodel{}.pth'.format(int(time.time()))
     KAGGLE = "Kaggle"
-    EPOCHS = 10
-    PRINTLOSS = 25
+    EPOCHS = 80
+    PRINTLOSS = 6
     BATCH_SIZE = 100
     device = torch.device("cuda:0")
 
     transforms = v2.Compose([
         v2.ToTensor(),
-        v2.RandomResizedCrop(size=(224, 224), antialias=True),
+        v2.CenterCrop([1000,800]),
         v2.RandomHorizontalFlip(p=0.5),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
     mushroom_jpegs = torchvision.datasets.ImageFolder(root=KAGGLE, transform=transforms)
-    
-    jpeg_amount = len(mushroom_jpegs)  
-    test_jpeg_amount = int(0.2 * jpeg_amount)  
-    test_set = Subset(mushroom_jpegs, range(test_jpeg_amount))
-    train_set = Subset(mushroom_jpegs, range(test_jpeg_amount, jpeg_amount))
-
-    test_set_loader  = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=0) 
-    train_set_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True,  num_workers=0)
+    train_set_loader = DataLoader(mushroom_jpegs, batch_size=BATCH_SIZE, shuffle=True,  num_workers=0)
 
     # classes = next(os.walk(KAGGLE))[1] # List folder names - ergo list mushroom family
 
@@ -93,11 +88,13 @@ def main():
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-
             if i % PRINTLOSS == PRINTLOSS-1:    # Print every #printloss mini-batches
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / PRINTLOSS:.3f}')
+                
                 running_loss = 0.0
-
+        if epoch%2==1:
+            torch.save(net.state_dict(), CHECKPOINT_PATH)
+        torch.cuda.empty_cache()
     print('Finished Training - Saving to {}'.format(SAVE_PATH)) 
     torch.save(net.state_dict(), SAVE_PATH)
 
