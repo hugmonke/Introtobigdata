@@ -23,45 +23,39 @@ def imshow(img):
 def main():
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-    LOAD_PATH = './Models/model{}.pth'.format(int(time.time()))
-    KAGGLE = "Kaggle"
-    BATCH_SIZE = 10
+    LOAD_PATH = 'Checkpoints/cpmodel1743508719.pth'
+    KAGGLE_TEST = "KaggleTest"
+    BATCH_SIZE = 100
 
     transforms = v2.Compose([
         v2.ToTensor(),
-        v2.RandomResizedCrop(size=(224, 224), antialias=True),
+        v2.CenterCrop([1000,800]),
         v2.RandomHorizontalFlip(p=0.5),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    mushroom_jpegs = torchvision.datasets.ImageFolder(root=KAGGLE, transform=transforms)
+    test_mushroom_jpegs = torchvision.datasets.ImageFolder(root=KAGGLE_TEST, transform=transforms)
+    test_set_loader  = DataLoader(test_mushroom_jpegs, batch_size=BATCH_SIZE, shuffle=True, num_workers=0) 
 
-    jpeg_amount = len(mushroom_jpegs)  
-    test_jpeg_amount = int(0.2 * jpeg_amount)  
-    test_set = Subset(mushroom_jpegs, range(test_jpeg_amount))
-    train_set = Subset(mushroom_jpegs, range(test_jpeg_amount, jpeg_amount))
-
-    test_set_loader  = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=0) 
-    train_set_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True,  num_workers=0)
-
-    classes = next(os.walk(KAGGLE))[1]
+    classes = next(os.walk(KAGGLE_TEST))[1]
     print(classes)
 
     dataiter = iter(test_set_loader)
     images, labels = next(dataiter)
-    imshow(torchvision.utils.make_grid(images))
+    #imshow(torchvision.utils.make_grid(images))
     print('GroundTruth: ', ' '.join(f'{classes[labels[j]]:5s}' for j in range(BATCH_SIZE)))
 
 
     net = CNN()
+    
     try:
         net.load_state_dict(torch.load(LOAD_PATH, weights_only=True))
-        print("Given load path is incorrect. Trying latest file.")
     except:
+        print("Given load path is incorrect. Trying latest file.")
         try:
             import glob
-            LOAD_PATH = os.path.join('Models', '*.pth')
+            LOAD_PATH = os.path.join('Checkpoints', '*.pth')
             list_of_files = glob.glob(LOAD_PATH)
             latest_file = max(list_of_files, key=os.path.getctime)
             net.load_state_dict(torch.load(latest_file, weights_only=True))
